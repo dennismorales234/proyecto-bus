@@ -23,6 +23,39 @@ def leer_datos(nombre_archivo):
         return contenido
     except:
         return []
+"""
+# Nombre: existe_en_lista
+# Entrada: elemento a buscar, la lista y el índice de la columna
+# Salida: booleano (True si existe, False si no)
+# Restricciones:
+"""
+
+def existe_en_lista(elemento, lista, indice):
+    
+    encontrado = False
+    for sublista in lista:
+        if sublista[indice] == elemento:
+            encontrado = True
+            break
+    return encontrado
+"""
+ Nombre: guardar_datos
+ Entrada: nombre del archivo (str) y la matriz de datos
+ Salida: ninguna (escribe en disco)
+ Restricciones: la matriz debe ser una lista de lista
+"""
+def guardar_datos(nombre_archivo, matriz):
+    archivo = open(nombre_archivo, "w", encoding="utf-8")
+    for fila in matriz:
+        linea_texto = ""
+        for i in range(len(fila)):
+            if i == len(fila) - 1:
+                linea_texto = linea_texto + fila[i]
+            else:
+                linea_texto = linea_texto + fila[i] + ";"
+        archivo.write(linea_texto + "\n")
+    archivo.close()
+
 
 def menu_principal():
     while True:
@@ -35,9 +68,12 @@ def menu_principal():
         if opcion == "1":
             if validar_acceso():
                 menu_administrativo()
+        if opcion == "11":
+            return gestionar_modelos()
         elif opcion == "2":
             menu_usuario() 
         elif opcion == "3":
+        
             print("Cerrando sistema... ¡Buen viaje!")
             break
            
@@ -71,16 +107,15 @@ def gestionar_modelos():
             nombre = input("Nombre de la marca: ")
             if not existe_en_lista(nombre, modelos, 0):
                 modelos = modelos + [[nombre]]
-                e = input("Asientos Ejecutiva: ")
-                t = input("Asientos Turista: ")
-                ec = input("Asientos Económica: ")
-                modelos = modelos + [[desc, marca_e, e, t, ec]]
-                guardar_datos("modeloAviones.txt", modelos)
+                e = input("Asientos : ")
+                t = input("Asientos pie: ")
+                modelos = modelos + [[ e, t]]
+                guardar_datos("modelo.txt", modelos)
                 print("Modelo registrado.")
             else: print("Error: Modelo ya existe.")
         elif op == "2":
             for mod in modelos:
-                print(f"Mod: {mod[0]} | Marca: {mod[1]} | Asientos: {mod[2]}/{mod[3]}/{mod[4]}")
+                print(f" Modelo: {mod[1]} | Asientos: {mod[2]} Asientos pie {mod[2]}")
         elif op == "3": break
            
 
