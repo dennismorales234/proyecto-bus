@@ -59,16 +59,48 @@ def validar_acceso():
             return True
     print("Usuario o clave incorrectos.")
     return False
+
+def gestionar_modelos():
+    while True:
+        print("\n--- GESTIÓN DE TIPOS (MODELOS) ---")
+        print("1. Incluir modelo | 2. Mostrar modelos | 3. Regresar")
+        op = input("Seleccione: ")
+        modelos = leer_datos("modelos.txt")
+        
+        if op == "1":
+            nombre = input("Nombre de la marca: ")
+            if not existe_en_lista(nombre, modelos, 0):
+                modelos = modelos + [[nombre]]
+                e = input("Asientos Ejecutiva: ")
+                t = input("Asientos Turista: ")
+                ec = input("Asientos Económica: ")
+                modelos = modelos + [[desc, marca_e, e, t, ec]]
+                guardar_datos("modeloAviones.txt", modelos)
+                print("Modelo registrado.")
+            else: print("Error: Modelo ya existe.")
+        elif op == "2":
+            for mod in modelos:
+                print(f"Mod: {mod[0]} | Marca: {mod[1]} | Asientos: {mod[2]}/{mod[3]}/{mod[4]}")
+        elif op == "3": break
+           
+
 def menu_administrativo():
-    print ("alto pro")
     
-    print( "(11) Gestión de modelos de autobús " )
+    print( "(11) Gestión de modelos de autobús" )
     print( "(12) Gestión de unidades" )
-    print( "(13) Gestión de conductores")
+    print( "(13) Gestión de conductores" )
+    print( "(14) Gestión de rutas" )
+    print( "(15) Gestión de paradas por ruta" )
+    print( "(16) Programación de salidas" )
+    print( "(17) Consultar historial de abordajes" )
+    print( "(18) Regresar al menú principal" )
 
     menu = input("seleccione ")
 
-    
+    if menu == "18":
+        return menu_principal()
+    if menu == "11":
+        return gestionar_modelos()
 if __name__ == "__main__":
     menu_principal()
     
