@@ -118,7 +118,58 @@ def gestionar_modelos():
                 print(f" Modelo: {mod[1]} | Asientos: {mod[2]} Asientos pie {mod[2]}")
         elif op == "3": break
            
+#EN PRUEBAS
+def consultar_estadisticas():
+    print("\n--- ESTADÍSTICAS POR BUS---")
+    vuelos = leer_datos("vuelos.txt")
+    reservas = leer_datos("reservas.txt")
+    modelos = leer_datos("modeloAviones.txt")
+    aviones = leer_datos("avionesAerolineas.txt")
+    
+    if vuelos == []:
+        print("No hay vuelos registrados.")
+        return
 
+    # Listar vuelos 
+    for v in vuelos:
+        print(f"ID: {v[0]} | {v[2]} -> {v[3]}")
+    
+    vuelo_id = input("\nIngrese el ID del vuelo para ver estadísticas: ")
+    
+    # vuelo seleccionado
+    vuelo_encontrado = []
+    for v in vuelos:
+        if v[0] == vuelo_id:
+            vuelo_encontrado = v
+            break
+            
+    if vuelo_encontrado != []:
+        # Recaudación
+        recaudado = 0
+        pasajeros_vuelo = 0
+        for res in reservas:
+            if res[2] == vuelo_id: # res[2] es el ID_Vuelo
+                pasajeros_vuelo = pasajeros_vuelo + 1
+               
+                recaudado = recaudado + float(vuelo_encontrado[10]) 
+        
+        
+        # Busca el avión - luego el modelo - asientos totales
+        matricula_avion = vuelo_encontrado[1]
+        modelo_nombre = ""
+        for av in aviones:
+            if av[0] == matricula_avion:
+                modelo_nombre = av[2]
+                break
+        
+        asientos_totales = 0
+        for mod in modelos:
+            if mod[0] == modelo_nombre:
+                # Suma las 3 clases
+                asientos_totales = int(mod[2]) + int(mod[3]) + int(mod[4])
+                break
+        
+        libres = asientos_totales - pasajeros_vuelo
 def menu_administrativo():
     
     print( "(11) Gestión de modelos de autobús" )
