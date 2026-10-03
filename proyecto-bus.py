@@ -266,7 +266,179 @@ def gestionar_conductores():
                     
         elif op == "5":
             break
-
+# ==========================================
+# (14) GESTIÓN DE RUTAS
+# ==========================================
+def gestionar_rutas():
+    while True:
+        print("\n--- (14) GESTIÓN DE RUTAS ---")
+        print("1. Incluir | 2. Mostrar | 3. Modificar | 4. Eliminar | 5. Regresar")
+        op = input("Seleccione: ")
+        rutas = leer_datos("rutas.txt")
+        
+        if op == "1":
+            codigo = input("Código de ruta: ")
+            if not existe_en_lista(codigo, rutas, 0):
+                origen = input("Lugar de origen: ")
+                destino = input("Lugar de destino: ")
+                distancia = input("Distancia total (km): ")
+                tarifa = input("Tarifa por kilómetro (colones): ")
+                rutas.append([codigo, origen, destino, distancia, tarifa])
+                guardar_datos("rutas.txt", rutas)
+                print("Ruta registrada con éxito.")
+            else:
+                print("Error: Ya existe una ruta con este código.")
+                
+        elif op == "2":
+            for r in rutas:
+                print(f"Código: {r[0]} | Origen: {r[1]} | Destino: {r[2]} | Distancia: {r[3]}km | Tarifa: ₡{r[4]}")
+                
+        elif op == "3":
+            codigo = input("Ingrese el código de la ruta a modificar: ")
+            encontrado = False
+            for i in range(len(rutas)):
+                if rutas[i][0] == codigo:
+                    rutas[i][1] = input("Nuevo lugar de origen: ")
+                    rutas[i][2] = input("Nuevo lugar de destino: ")
+                    rutas[i][3] = input("Nueva distancia total (km): ")
+                    rutas[i][4] = input("Nueva tarifa por kilómetro: ")
+                    guardar_datos("rutas.txt", rutas)
+                    print("Ruta modificada con éxito.")
+                    encontrado = True
+                    break
+            if not encontrado:
+                print("Ruta no encontrada.")
+                
+        elif op == "4":
+            codigo = input("Ingrese el código de la ruta a eliminar: ")
+            paradas = leer_datos("paradas.txt")
+            salidas = leer_datos("salidas.txt")
+            
+            # Validar si tiene paradas o salidas asignadas
+            if existe_en_lista(codigo, paradas, 0) or existe_en_lista(codigo, salidas, 1):
+                print("Error: No se puede eliminar. La ruta tiene paradas registradas o salidas programadas.")
+            else:
+                nuevas_rutas = []
+                encontrado = False
+                for r in rutas:
+                    if r[0] != codigo:
+                        nuevas_rutas.append(r)
+                    else:
+                        encontrado = True
+                if encontrado:
+                    guardar_datos("rutas.txt", nuevas_rutas)
+                    print("Ruta eliminada con éxito.")
+                else:
+                    print("Ruta no encontrada.")
+                    
+        elif op == "5":
+            break
+# ==========================================
+# (15) GESTIÓN DE PARADAS POR RUTA
+# ==========================================
+def gestionar_paradas():
+    while True:
+        print("\n--- (15) GESTIÓN DE PARADAS POR RUTA ---")
+        print("1. Incluir | 2. Mostrar | 3. Modificar | 4. Eliminar | 5. Regresar")
+        op = input("Seleccione: ")
+        paradas = leer_datos("paradas.txt")
+        rutas = leer_datos("rutas.txt")
+        
+        if op == "1":
+            codigo = input("Código de ruta: ")
+            if existe_en_lista(codigo, rutas, 0):
+                orden = input("Número de orden: ")
+                
+                # Verificar que el orden no exista ya para esa ruta
+                orden_existe = False
+                for p in paradas:
+                    if p[0] == codigo and p[1] == orden:
+                        orden_existe = True
+                        break
+                
+                if not orden_existe:
+                    nombre = input("Nombre de la parada: ")
+                    km = input("Kilómetro acumulado: ")
+                    
+                    # Validaciones de kilómetros
+                    valido = True
+                    if orden == "1" and km != "0":
+                        print("Error: La primera parada (orden 1) debe tener kilómetro acumulado cero.")
+                        valido = False
+                    else:
+                        # Verificar que el km sea creciente
+                        for p in paradas:
+                            if p[0] == codigo:
+                                # Si hay una parada anterior, su km debe ser menor
+                                if int(p[1]) < int(orden) and float(p[3]) >= float(km):
+                                    print("Error: El kilómetro debe ser mayor que el de las paradas anteriores.")
+                                    valido = False
+                                    break
+                                # Si hay una parada posterior, su km debe ser mayor
+                                if int(p[1]) > int(orden) and float(p[3]) <= float(km):
+                                    print("Error: El kilómetro debe ser menor que el de las paradas posteriores.")
+                                    valido = False
+                                    break
+                    
+                    if valido:
+                        paradas.append([codigo, orden, nombre, km])
+                        guardar_datos("paradas.txt", paradas)
+                        print("Parada registrada con éxito.")
+                else:
+                    print("Error: Ya existe una parada con ese número de orden en esta ruta.")
+            else:
+                print("Error: El código de ruta no existe.")
+                
+        elif op == "2":
+            for p in paradas:
+                print(f"Ruta: {p[0]} | Orden: {p[1]} | Nombre: {p[2]} | Km: {p[3]}")
+                
+        elif op == "3":
+            codigo = input("Ingrese el código de ruta: ")
+            orden = input("Ingrese el número de orden de la parada a modificar: ")
+            encontrado = False
+            for i in range(len(paradas)):
+                if paradas[i][0] == codigo and paradas[i][1] == orden:
+                    paradas[i][2] = input("Nuevo nombre de la parada: ")
+                    # Para simplificar y no romper el ciclo de validación creciente, 
+                    # usualmente solo se modifica el nombre. Si modificas el km, 
+                    # tendrías que aplicar las mismas validaciones de inclusión.
+                    print("Parada modificada con éxito (solo nombre).")
+                    guardar_datos("paradas.txt", paradas)
+                    encontrado = True
+                    break
+            if not encontrado:
+                print("Parada no encontrada.")
+                
+        elif op == "4":
+            codigo = input("Ingrese el código de ruta: ")
+            orden = input("Ingrese el número de orden a eliminar: ")
+            nuevas_paradas = []
+            encontrado = False
+            
+            for p in paradas:
+                if p[0] == codigo and p[1] == orden:
+                    encontrado = True
+                else:
+                    # Si es de la misma ruta y el orden es mayor al eliminado, reacomodamos restando 1
+                    if p[0] == codigo and int(p[1]) > int(orden) and encontrado == False:
+                        # Si todavía no lo hemos encontrado, significa que estamos iterando antes 
+                        # del elemento a eliminar, no hacemos nada.
+                        nuevas_paradas.append(p)
+                    elif p[0] == codigo and int(p[1]) > int(orden):
+                        p[1] = str(int(p[1]) - 1)
+                        nuevas_paradas.append(p)
+                    else:
+                        nuevas_paradas.append(p)
+                        
+            if encontrado:
+                guardar_datos("paradas.txt", nuevas_paradas)
+                print("Parada eliminada y secuencia reacomodada con éxito.")
+            else:
+                print("Parada no encontrada.")
+                
+        elif op == "5":
+            break
 # ==========================================
 # MENÚS PRINCIPALES
 # ==========================================
@@ -289,6 +461,11 @@ def menu_administrativo():
         elif menu == "12":
             gestionar_unidades()
         elif menu == "13":
+            gestionar_conductores()
+        elif menu == "14":
+            gestionar_rutas()
+        elif menu == "15":
+            gestionar_paradas()
             gestionar_conductores()
         elif menu == "18":
             break
