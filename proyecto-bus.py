@@ -439,6 +439,202 @@ def gestionar_paradas():
                 
         elif op == "5":
             break
+        # ==========================================
+# FUNCIONES AUXILIARES PARA SALIDAS
+# ==========================================
+
+# Convierte "HH:MM" a un número de minutos (ej. "06:30" -> 390)
+def tiempo_a_minutos(hora_str):
+    partes = hora_str.split(":")
+    return int(partes[0]) * 60 + int(partes[1])
+
+# Convierte "DD/MM/AAAA" a un número "AAAAMMDD" para poder comparar fechas con < o >
+def fecha_a_numero(fecha_str):
+    partes = fecha_str.split("/")
+    return int(partes[2] + partes[1] + partes[0])
+
+# Genera el código automático S001, S002, etc.
+def generar_id_salida(salidas):
+    if len(salidas) == 0:
+        return "S001"
+    # Tomamos el último ID y le sumamos 1
+    ultimo_id = salidas[-1][0]
+    numero = int(ultimo_id[1:]) + 1
+    
+    if numero < 10:
+        return "S00" + str(numero)
+    elif numero < 100:
+        return "S0" + str(numero)
+    else:
+        return "S" + str(numero)
+
+# Valida todas las reglas de negocio antes de registrar o modificar
+def validar_reglas_salida(ruta, unidad, conductor, fecha, h_salida, h_llegada, salidas, conductores, id_ignorar=""):
+    min_salida = tiempo_a_minutos(h_salida)
+    min_llegada = tiempo_a_minutos(h_llegada)
+    
+    # 1. La hora de llegada debe ser posterior a la de salida
+    if min_llegada <= min_salida:
+        print("Error: La hora estimada de llegada debe ser posterior a la de salida.")
+        return False
+        
+    duracion_nueva = (min_llegada - min_salida) / 60.0
+    
+    # Buscar datos del conductor para validarlo
+    datos_cond = []
+    for c in conductores:
+        if c[0] == conductor:
+            datos_cond = c
+            break
+            
+    if not datos_cond:
+        print("Error: El conductor seleccionado no existe en el sistema.")
+        return False
+        
+    # 2. Licencia vencida
+    if fecha_a_numero(datos_cond[3]) < fecha_a_numero(fecha):
+        print("Error: La licencia del conductor está vencida para la fecha de la salida.")
+        return False
+
+    horas_acumuladas = 0.0
+    
+    for s in salidas:
+        # Si estamos modificando, ignoramos la salida actual
+        if s[0] == id_ignorar:
+            continue
+            
+        # Si la salida analizada es en la misma fecha, comprobamos traslapes
+        if s[4] == fecha:
+            s_min_sal = tiempo_a_minutos(s[5])
+            s_min_lle = tiempo_a_minutos(s[6])
+            
+            # Condición de traslape: inicio1 < fin2 y fin1 > inicio2
+            hay_traslape = (min_salida < s_min_lle) and (min_llegada > s_min_sal)
+            
+            # 3. Traslape de unidad
+            if s[2] == unidad and hay_traslape:
+                print("Error: La unidad seleccionada ya tiene una salida que se traslape en ese horario.")
+                return False
+                
+            # 4. Traslape de conductor
+            if s[3] == conductor:
+                if hay_traslape:
+                    print("Error: El conductor seleccionado ya tiene una salida que se traslape en ese horario.")
+                    return False
+                # Si no hay traslape pero es el mismo día, sumamos sus horas
+                horas_acumuladas += (s_min_lle - s_min_sal) / 60.0
+                
+    # 5. Jornada máxima
+    if horas_acumuladas + duracion_nueva > float(datos_cond[4]):
+        print(f"Error: Asignar esta salida excede la jornada máxima diaria del conductor ({datos_cond[4]} horas).")
+        return False
+
+    return True
+
+# ==========================================
+# (16) PROGRAMACIÓN DE SALIDAS
+# ==========================================
+def gestionar_salidas():
+    while True:
+        print("\n--- (16) PROGRAMACIÓN DE SALIDAS ---")
+        print("1. Incluir | 2. Mostrar | 3. Modificar | 4. Eliminar | 5. Regresar")
+        op = input("Seleccione: ")
+        
+        salidas = leer_datos("salidas.txt")
+        rutas = leer_datos("rutas.txt")
+        unidades = leer_datos("unidades.txt")
+        conductores = leer_datos("conductores.txt")
+        
+        if op == "1":
+            print("\nListas disponibles:")
+            print("Rutas registradas:", end=" ")
+            for r in rutas: print(r[0], end=" | ")
+            print("\nUnidades registradas:", end=" ")
+            for u in unidades: print(u[0], end=" | ")
+            print("\nConductores registrados:", end=" ")
+            for c in conductores: print(c[0], end=" | ")
+            print("\n")
+            
+            ruta = input("Código de ruta: ")
+            unidad = input("Placa de la unidad: ")
+            conductor = input("Cédula del conductor: ")
+            
+            # Validar existencia básica
+            if existe_en_lista(ruta, rutas, 0) and existe_en_lista(unidad, unidades, 0) and existe_en_lista(conductor, conductores, 0):
+                fecha = input("Fecha de salida (DD/MM/AAAA): ")
+                h_salida = input("Hora de salida (HH:MM): ")
+                h_llegada = input("Hora estimada de llegada (HH:MM): ")
+                
+                if validar_reglas_salida(ruta, unidad, conductor, fecha, h_salida, h_llegada, salidas, conductores):
+                    nuevo_id = generar_id_salida(salidas)
+                    salidas.append([nuevo_id, ruta, unidad, conductor, fecha, h_salida, h_llegada])
+                    guardar_datos("salidas.txt", salidas)
+                    print(f"Salida {nuevo_id} programada con éxito.")
+            else:
+                print("Error: La ruta, unidad o conductor indicados no existen en el sistema.")
+                
+        elif op == "2":
+            for s in salidas:
+                print(f"Salida: {s[0]} | Ruta: {s[1]} | Unidad: {s[2]} | Cond: {s[3]} | Fecha: {s[4]} | Horario: {s[5]} - {s[6]}")
+                
+        elif op == "3":
+            num_salida = input("Ingrese el número de salida a modificar (ej. S001): ")
+            encontrado = False
+            
+            for i in range(len(salidas)):
+                if salidas[i][0] == num_salida:
+                    print("Ingrese los nuevos datos (presione Enter para mantener listas, o escriba los nuevos):")
+                    n_ruta = input(f"Nueva ruta ({salidas[i][1]}): ") or salidas[i][1]
+                    n_unidad = input(f"Nueva unidad ({salidas[i][2]}): ") or salidas[i][2]
+                    n_conductor = input(f"Nuevo conductor ({salidas[i][3]}): ") or salidas[i][3]
+                    n_fecha = input(f"Nueva fecha ({salidas[i][4]}): ") or salidas[i][4]
+                    n_h_salida = input(f"Nueva hora salida ({salidas[i][5]}): ") or salidas[i][5]
+                    n_h_llegada = input(f"Nueva hora llegada ({salidas[i][6]}): ") or salidas[i][6]
+                    
+                    if existe_en_lista(n_ruta, rutas, 0) and existe_en_lista(n_unidad, unidades, 0) and existe_en_lista(n_conductor, conductores, 0):
+                        # Aplicar de nuevo las validaciones, enviando el ID actual para que se ignore a sí mismo en el chequeo
+                        if validar_reglas_salida(n_ruta, n_unidad, n_conductor, n_fecha, n_h_salida, n_h_llegada, salidas, conductores, id_ignorar=num_salida):
+                            salidas[i][1] = n_ruta
+                            salidas[i][2] = n_unidad
+                            salidas[i][3] = n_conductor
+                            salidas[i][4] = n_fecha
+                            salidas[i][5] = n_h_salida
+                            salidas[i][6] = n_h_llegada
+                            guardar_datos("salidas.txt", salidas)
+                            print("Salida modificada con éxito y validaciones superadas.")
+                    else:
+                        print("Error: Algún dato de ruta, unidad o conductor no existe.")
+                    
+                    encontrado = True
+                    break
+                    
+            if not encontrado:
+                print("Salida no encontrada.")
+                
+        elif op == "4":
+            num_salida = input("Ingrese el número de salida a eliminar (ej. S001): ")
+            abordajes = leer_datos("abordajes.txt")
+            
+            # Verificar que no tenga abordajes registrados
+            if existe_en_lista(num_salida, abordajes, 2):
+                print("Error: No se puede eliminar. La salida tiene abordajes registrados.")
+            else:
+                nuevas_salidas = []
+                encontrado = False
+                for s in salidas:
+                    if s[0] != num_salida:
+                        nuevas_salidas.append(s)
+                    else:
+                        encontrado = True
+                
+                if encontrado:
+                    guardar_datos("salidas.txt", nuevas_salidas)
+                    print("Salida eliminada con éxito.")
+                else:
+                    print("Salida no encontrada.")
+                    
+        elif op == "5":
+            break
 # ==========================================
 # (17) CONSULTAR HISTORIAL DE ABORDAJES
 # ==========================================
@@ -451,7 +647,7 @@ def consultar_historial():
         print("No hay abordajes registrados.")
         return
 
-    # Se solicitan los filtros (presionar Enter los ignora)[cite: 4]
+    # Se solicitan los filtros (presionar Enter los ignora)
     print("Filtros de búsqueda (presione Enter para omitir):")
     f_ruta = input("Ruta: ")
     f_fecha_salida = input("Fecha de salida (DD/MM/AAAA): ")
@@ -541,6 +737,8 @@ def menu_administrativo():
             gestionar_rutas()
         elif menu == "15":
             gestionar_paradas()
+        elif menu == "16":
+            gestionar_salidas()
         elif menu == "17":
             consultar_historial()
         elif menu == "18":
