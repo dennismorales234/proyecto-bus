@@ -440,6 +440,81 @@ def gestionar_paradas():
         elif op == "5":
             break
 # ==========================================
+# (17) CONSULTAR HISTORIAL DE ABORDAJES
+# ==========================================
+def consultar_historial():
+    print("\n--- (17) CONSULTAR HISTORIAL DE ABORDAJES ---")
+    abordajes = leer_datos("abordajes.txt")
+    salidas = leer_datos("salidas.txt")
+    
+    if not abordajes:
+        print("No hay abordajes registrados.")
+        return
+
+    # Se solicitan los filtros (presionar Enter los ignora)[cite: 4]
+    print("Filtros de búsqueda (presione Enter para omitir):")
+    f_ruta = input("Ruta: ")
+    f_fecha_salida = input("Fecha de salida (DD/MM/AAAA): ")
+    f_fecha_reg_ini = input("Fecha de registro inicial (DD/MM/AAAA): ")
+    f_fecha_reg_fin = input("Fecha de registro final (DD/MM/AAAA): ")
+    f_parada = input("Número de orden de la parada de abordaje: ")
+
+    total_pasajeros = 0
+    total_monto = 0.0
+
+    print("\n=== RESULTADOS DE BÚSQUEDA ===")
+    for a in abordajes:
+        # Formato de abordaje: [ID, Nombre, Num_Salida, Fecha_Reg, Hora_Reg, Parada_Origen, Parada_Destino, Cantidad, Monto][cite: 5]
+        id_salida = a[2]
+        
+        # Cruzar datos con el archivo de salidas[cite: 4]
+        datos_salida = []
+        for s in salidas:
+            if s[0] == id_salida:
+                datos_salida = s
+                break
+        
+        if not datos_salida:
+            continue
+            
+        # Formato salida: [ID, Ruta, Unidad, Conductor, Fecha_Salida, H_Salida, H_Llegada][cite: 4]
+        ruta = datos_salida[1]
+        fecha_salida = datos_salida[4]
+        unidad = datos_salida[2]
+        conductor = datos_salida[3]
+        h_salida = datos_salida[5]
+        
+        # Aplicación de filtros
+        if f_ruta and ruta != f_ruta:
+            continue
+        if f_fecha_salida and fecha_salida != f_fecha_salida:
+            continue
+        if f_parada and a[5] != f_parada:
+            continue
+            
+        # Filtro de rango de fechas usando la función auxiliar fecha_a_numero creada en la opción 16[cite: 4]
+        if f_fecha_reg_ini or f_fecha_reg_fin:
+            num_fecha_reg = fecha_a_numero(a[3])
+            if f_fecha_reg_ini and num_fecha_reg < fecha_a_numero(f_fecha_reg_ini):
+                continue
+            if f_fecha_reg_fin and num_fecha_reg > fecha_a_numero(f_fecha_reg_fin):
+                continue
+
+        # Si supera los filtros, se muestra la información consolidada[cite: 4]
+        print(f"ID Abordaje: {a[0]} | Pasajero: {a[1]} | Salida: {id_salida} | Ruta: {ruta}")
+        print(f"   Fecha y Hora Salida: {fecha_salida} {h_salida} | Unidad: {unidad} | Cond: {conductor}")
+        print(f"   Parada Abordaje: {a[5]} | Parada Destino: {a[6]} | Pasajeros: {a[7]} | Monto cancelado: ₡{a[8]}\n")
+        
+        total_pasajeros += int(a[7])
+        total_monto += float(a[8])
+
+    # Totales requeridos al final del listado[cite: 4]
+    print("--------------------------------------------------")
+    print(f"Total de pasajeros: {total_pasajeros}")
+    print(f"Monto total acumulado: ₡{total_monto}")
+    print("--------------------------------------------------")
+    
+# ==========================================
 # MENÚS PRINCIPALES
 # ==========================================
 def menu_administrativo():
@@ -466,7 +541,8 @@ def menu_administrativo():
             gestionar_rutas()
         elif menu == "15":
             gestionar_paradas()
-            gestionar_conductores()
+        elif menu == "17":
+            consultar_historial()
         elif menu == "18":
             break
         else:
