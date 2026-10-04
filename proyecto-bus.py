@@ -439,7 +439,7 @@ def gestionar_paradas():
                 
         elif op == "5":
             break
-        # ==========================================
+# ==========================================
 # FUNCIONES AUXILIARES PARA SALIDAS
 # ==========================================
 
@@ -746,11 +746,76 @@ def menu_administrativo():
         else:
             print("Opción en construcción o inválida.")
 
-def menu_usuario():
-    print("\n--- MENÚ DE USUARIO ---")
-    print("Opciones de usuario en construcción...")
-    # Aquí irían las opciones 21 a 24
+# ==========================================
+# (21) CONSULTA DE SALIDAS
+# ==========================================
+def consulta_salidas():
+    print("\n--- (21) CONSULTA DE SALIDAS ---")
+    salidas = leer_datos("salidas.txt")
+    rutas = leer_datos("rutas.txt")
+    unidades = leer_datos("unidades.txt")
+    modelos = leer_datos("modelos.txt")
+    abordajes = leer_datos("abordajes.txt")
 
+    print("Filtros de búsqueda (presione Enter para omitir):")
+    f_ruta = input("Ruta: ")
+    f_origen = input("Lugar de origen: ")
+    f_destino = input("Lugar de destino: ")
+    f_fecha = input("Fecha de salida (DD/MM/AAAA): ")
+
+    print("\n=== SALIDAS PROGRAMADAS ===")
+    for s in salidas:
+        id_salida = s[0]
+        cod_ruta = s[1]
+        placa_unidad = s[2]
+        fecha_salida = s[4]
+        h_salida = s[5]
+        h_llegada = s[6]
+
+        # Aplicar filtros directos de salida[cite: 5]
+        if f_ruta and cod_ruta != f_ruta:
+            continue
+        if f_fecha and fecha_salida != f_fecha:
+            continue
+
+        # Obtener datos de la ruta[cite: 3]
+        origen, destino = "", ""
+        for r in rutas:
+            if r[0] == cod_ruta:
+                origen = r[1]
+                destino = r[2]
+                break
+                
+        # Aplicar filtros de ruta[cite: 5]
+        if f_origen and origen != f_origen:
+            continue
+        if f_destino and destino != f_destino:
+            continue
+
+        # Calcular capacidad de la unidad[cite: 2, 5]
+        cod_modelo = ""
+        for u in unidades:
+            if u[0] == placa_unidad:
+                cod_modelo = u[1]
+                break
+                
+        capacidad_total = 0
+        for m in modelos:
+            if m[0] == cod_modelo:
+                capacidad_total = int(m[2]) + int(m[3]) # Asientos + De pie
+                break
+
+        # Calcular espacios ocupados revisando abordajes[cite: 5]
+        ocupados = 0
+        for a in abordajes:
+            if a[2] == id_salida:
+                ocupados += int(a[7])
+                
+        disponibles = capacidad_total - ocupados
+
+        print(f"Salida: {id_salida} | Ruta: {cod_ruta} ({origen} - {destino})")
+        print(f"   Fecha: {fecha_salida} | Hora: {h_salida} a {h_llegada}")
+        print(f"   Unidad: {placa_unidad} | Capacidad: {capacidad_total} | Ocupados: {ocupados} | Disponibles: {disponibles}\n")
 def menu_principal():
     while True:
         print("\n=== SISTEMA DE BUSES TEC ===")
