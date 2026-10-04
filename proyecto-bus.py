@@ -60,7 +60,7 @@ def validar_acceso():
     usuarios = leer_datos("acceso.txt")
     
     for u in usuarios:
-        # Se usa .strip() para limpiar posibles espacios en la contraseña leída del disco
+        
         if u[0].strip() == u_input and u[1].strip() == c_input:
             print("Acceso concedido.")
             return True
@@ -83,7 +83,7 @@ def gestionar_modelos():
                 marca = input("Marca: ")
                 asientos = input("Cantidad de asientos: ")
                 pie = input("Cantidad de espacios de pie: ")
-                # Se agrega como una sola fila (lista) para mantener la matriz correcta
+                
                 modelos.append([desc, marca, asientos, pie])
                 guardar_datos("modelos.txt", modelos)
                 print("Modelo registrado con éxito.")
@@ -349,7 +349,7 @@ def gestionar_paradas():
             if existe_en_lista(codigo, rutas, 0):
                 orden = input("Número de orden: ")
                 
-                # Verificar que el orden no exista ya para esa ruta
+                # Verifica que el orden no exista ya para esa ruta
                 orden_existe = False
                 for p in paradas:
                     if p[0] == codigo and p[1] == orden:
@@ -366,15 +366,15 @@ def gestionar_paradas():
                         print("Error: La primera parada (orden 1) debe tener kilómetro acumulado cero.")
                         valido = False
                     else:
-                        # Verificar que el km sea creciente
+                        
                         for p in paradas:
                             if p[0] == codigo:
-                                # Si hay una parada anterior, su km debe ser menor
+                                
                                 if int(p[1]) < int(orden) and float(p[3]) >= float(km):
                                     print("Error: El kilómetro debe ser mayor que el de las paradas anteriores.")
                                     valido = False
                                     break
-                                # Si hay una parada posterior, su km debe ser mayor
+                                
                                 if int(p[1]) > int(orden) and float(p[3]) <= float(km):
                                     print("Error: El kilómetro debe ser menor que el de las paradas posteriores.")
                                     valido = False
@@ -400,9 +400,7 @@ def gestionar_paradas():
             for i in range(len(paradas)):
                 if paradas[i][0] == codigo and paradas[i][1] == orden:
                     paradas[i][2] = input("Nuevo nombre de la parada: ")
-                    # Para simplificar y no romper el ciclo de validación creciente, 
-                    # usualmente solo se modifica el nombre. Si modificas el km, 
-                    # tendrías que aplicar las mismas validaciones de inclusión.
+                  
                     print("Parada modificada con éxito (solo nombre).")
                     guardar_datos("paradas.txt", paradas)
                     encontrado = True
@@ -420,10 +418,7 @@ def gestionar_paradas():
                 if p[0] == codigo and p[1] == orden:
                     encontrado = True
                 else:
-                    # Si es de la misma ruta y el orden es mayor al eliminado, reacomodamos restando 1
                     if p[0] == codigo and int(p[1]) > int(orden) and encontrado == False:
-                        # Si todavía no lo hemos encontrado, significa que estamos iterando antes 
-                        # del elemento a eliminar, no hacemos nada.
                         nuevas_paradas.append(p)
                     elif p[0] == codigo and int(p[1]) > int(orden):
                         p[1] = str(int(p[1]) - 1)
@@ -443,21 +438,18 @@ def gestionar_paradas():
 # FUNCIONES AUXILIARES PARA SALIDAS
 # ==========================================
 
-# Convierte "HH:MM" a un número de minutos (ej. "06:30" -> 390)
 def tiempo_a_minutos(hora_str):
     partes = hora_str.split(":")
     return int(partes[0]) * 60 + int(partes[1])
 
-# Convierte "DD/MM/AAAA" a un número "AAAAMMDD" para poder comparar fechas con < o >
 def fecha_a_numero(fecha_str):
     partes = fecha_str.split("/")
     return int(partes[2] + partes[1] + partes[0])
 
-# Genera el código automático S001, S002, etc.
 def generar_id_salida(salidas):
     if len(salidas) == 0:
         return "S001"
-    # Tomamos el último ID y le sumamos 1
+    
     ultimo_id = salidas[-1][0]
     numero = int(ultimo_id[1:]) + 1
     
@@ -468,19 +460,19 @@ def generar_id_salida(salidas):
     else:
         return "S" + str(numero)
 
-# Valida todas las reglas de negocio antes de registrar o modificar
+# Valida todas las reglas de negocio antes de registrar 
 def validar_reglas_salida(ruta, unidad, conductor, fecha, h_salida, h_llegada, salidas, conductores, id_ignorar=""):
     min_salida = tiempo_a_minutos(h_salida)
     min_llegada = tiempo_a_minutos(h_llegada)
     
-    # 1. La hora de llegada debe ser posterior a la de salida
+    
     if min_llegada <= min_salida:
         print("Error: La hora estimada de llegada debe ser posterior a la de salida.")
         return False
         
     duracion_nueva = (min_llegada - min_salida) / 60.0
     
-    # Buscar datos del conductor para validarlo
+    
     datos_cond = []
     for c in conductores:
         if c[0] == conductor:
@@ -491,7 +483,7 @@ def validar_reglas_salida(ruta, unidad, conductor, fecha, h_salida, h_llegada, s
         print("Error: El conductor seleccionado no existe en el sistema.")
         return False
         
-    # 2. Licencia vencida
+    
     if fecha_a_numero(datos_cond[3]) < fecha_a_numero(fecha):
         print("Error: La licencia del conductor está vencida para la fecha de la salida.")
         return False
@@ -499,29 +491,29 @@ def validar_reglas_salida(ruta, unidad, conductor, fecha, h_salida, h_llegada, s
     horas_acumuladas = 0.0
     
     for s in salidas:
-        # Si estamos modificando, ignoramos la salida actual
+        
         if s[0] == id_ignorar:
             continue
             
-        # Si la salida analizada es en la misma fecha, comprobamos traslapes
+        
         if s[4] == fecha:
             s_min_sal = tiempo_a_minutos(s[5])
             s_min_lle = tiempo_a_minutos(s[6])
             
-            # Condición de traslape: inicio1 < fin2 y fin1 > inicio2
+            
             hay_traslape = (min_salida < s_min_lle) and (min_llegada > s_min_sal)
             
-            # 3. Traslape de unidad
+            
             if s[2] == unidad and hay_traslape:
                 print("Error: La unidad seleccionada ya tiene una salida que se traslape en ese horario.")
                 return False
                 
-            # 4. Traslape de conductor
+            
             if s[3] == conductor:
                 if hay_traslape:
                     print("Error: El conductor seleccionado ya tiene una salida que se traslape en ese horario.")
                     return False
-                # Si no hay traslape pero es el mismo día, sumamos sus horas
+               
                 horas_acumuladas += (s_min_lle - s_min_sal) / 60.0
                 
     # 5. Jornada máxima
@@ -592,7 +584,7 @@ def gestionar_salidas():
                     n_h_llegada = input(f"Nueva hora llegada ({salidas[i][6]}): ") or salidas[i][6]
                     
                     if existe_en_lista(n_ruta, rutas, 0) and existe_en_lista(n_unidad, unidades, 0) and existe_en_lista(n_conductor, conductores, 0):
-                        # Aplicar de nuevo las validaciones, enviando el ID actual para que se ignore a sí mismo en el chequeo
+                        # Aplicar de nuevo las validaciones
                         if validar_reglas_salida(n_ruta, n_unidad, n_conductor, n_fecha, n_h_salida, n_h_llegada, salidas, conductores, id_ignorar=num_salida):
                             salidas[i][1] = n_ruta
                             salidas[i][2] = n_unidad
@@ -615,7 +607,7 @@ def gestionar_salidas():
             num_salida = input("Ingrese el número de salida a eliminar (ej. S001): ")
             abordajes = leer_datos("abordajes.txt")
             
-            # Verificar que no tenga abordajes registrados
+            
             if existe_en_lista(num_salida, abordajes, 2):
                 print("Error: No se puede eliminar. La salida tiene abordajes registrados.")
             else:
@@ -647,7 +639,7 @@ def consultar_historial():
         print("No hay abordajes registrados.")
         return
 
-    # Se solicitan los filtros (presionar Enter los ignora)
+    
     print("Filtros de búsqueda (presione Enter para omitir):")
     f_ruta = input("Ruta: ")
     f_fecha_salida = input("Fecha de salida (DD/MM/AAAA): ")
@@ -660,10 +652,10 @@ def consultar_historial():
 
     print("\n=== RESULTADOS DE BÚSQUEDA ===")
     for a in abordajes:
-        # Formato de abordaje: [ID, Nombre, Num_Salida, Fecha_Reg, Hora_Reg, Parada_Origen, Parada_Destino, Cantidad, Monto][cite: 5]
+        # Formato de abordaje: [ID, Nombre, Num_Salida, Fecha_Reg, Hora_Reg, Parada_Origen, Parada_Destino, Cantidad, Monto]
         id_salida = a[2]
         
-        # Cruzar datos con el archivo de salidas[cite: 4]
+        
         datos_salida = []
         for s in salidas:
             if s[0] == id_salida:
@@ -673,7 +665,7 @@ def consultar_historial():
         if not datos_salida:
             continue
             
-        # Formato salida: [ID, Ruta, Unidad, Conductor, Fecha_Salida, H_Salida, H_Llegada][cite: 4]
+        # Formato salida: [ID, Ruta, Unidad, Conductor, Fecha_Salida, H_Salida, H_Llegada]
         ruta = datos_salida[1]
         fecha_salida = datos_salida[4]
         unidad = datos_salida[2]
@@ -688,7 +680,7 @@ def consultar_historial():
         if f_parada and a[5] != f_parada:
             continue
             
-        # Filtro de rango de fechas usando la función auxiliar fecha_a_numero creada en la opción 16[cite: 4]
+        # Filtro de rango de fechas usando la función auxiliar fecha_a_numero creada en la opción 16
         if f_fecha_reg_ini or f_fecha_reg_fin:
             num_fecha_reg = fecha_a_numero(a[3])
             if f_fecha_reg_ini and num_fecha_reg < fecha_a_numero(f_fecha_reg_ini):
@@ -696,7 +688,7 @@ def consultar_historial():
             if f_fecha_reg_fin and num_fecha_reg > fecha_a_numero(f_fecha_reg_fin):
                 continue
 
-        # Si supera los filtros, se muestra la información consolidada[cite: 4]
+        
         print(f"ID Abordaje: {a[0]} | Pasajero: {a[1]} | Salida: {id_salida} | Ruta: {ruta}")
         print(f"   Fecha y Hora Salida: {fecha_salida} {h_salida} | Unidad: {unidad} | Cond: {conductor}")
         print(f"   Parada Abordaje: {a[5]} | Parada Destino: {a[6]} | Pasajeros: {a[7]} | Monto cancelado: ₡{a[8]}\n")
@@ -704,7 +696,7 @@ def consultar_historial():
         total_pasajeros += int(a[7])
         total_monto += float(a[8])
 
-    # Totales requeridos al final del listado[cite: 4]
+   
     print("--------------------------------------------------")
     print(f"Total de pasajeros: {total_pasajeros}")
     print(f"Monto total acumulado: ₡{total_monto}")
@@ -772,13 +764,13 @@ def consulta_salidas():
         h_salida = s[5]
         h_llegada = s[6]
 
-        # Aplicar filtros directos de salida[cite: 5]
+       
         if f_ruta and cod_ruta != f_ruta:
             continue
         if f_fecha and fecha_salida != f_fecha:
             continue
 
-        # Obtener datos de la ruta[cite: 3]
+        
         origen, destino = "", ""
         for r in rutas:
             if r[0] == cod_ruta:
@@ -786,13 +778,13 @@ def consulta_salidas():
                 destino = r[2]
                 break
                 
-        # Aplicar filtros de ruta[cite: 5]
+        
         if f_origen and origen != f_origen:
             continue
         if f_destino and destino != f_destino:
             continue
 
-        # Calcular capacidad de la unidad[cite: 2, 5]
+        
         cod_modelo = ""
         for u in unidades:
             if u[0] == placa_unidad:
@@ -802,10 +794,10 @@ def consulta_salidas():
         capacidad_total = 0
         for m in modelos:
             if m[0] == cod_modelo:
-                capacidad_total = int(m[2]) + int(m[3]) # Asientos + De pie
+                capacidad_total = int(m[2]) + int(m[3]) 
                 break
 
-        # Calcular espacios ocupados revisando abordajes[cite: 5]
+        
         ocupados = 0
         for a in abordajes:
             if a[2] == id_salida:
